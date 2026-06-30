@@ -13,11 +13,19 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Extract ZIP to root
-        run: |
-          for file in *.zip; do
-            [ -f "$file" ] || exit 0
-            unzip -o "$file"
-          done
+  run: |
+    for file in *.zip; do
+      [ -f "$file" ] || exit 0
+      unzip -o "$file"
+
+      dir=$(find . -maxdepth 1 -type d ! -name "." ! -name ".git" ! -name ".github" | head -n 1)
+
+      if [ -n "$dir" ]; then
+        shopt -s dotglob
+        mv "$dir"/* .
+        rm -rf "$dir"
+      fi
+    done
 
       - name: Remove ZIP
         run: rm -f *.zip
