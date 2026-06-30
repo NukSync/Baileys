@@ -1,29 +1,34 @@
-name: Auto Extract ZIP
+name: Extract Zip File
 
-on: [push]
+on:
+  push:
+    paths:
+      - '**.zip'
+  workflow_dispatch:
 
 jobs:
   unzip:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v2
 
-      - name: Extract ZIP to root
+      - name: Unzip and push
         run: |
-          for file in *.zip; do
-            unzip -o "$file"
-          done
+          # Hapus folder lama (opsional)
+          rm -rf lib WAProto
 
-      - name: Remove ZIP
-        run: rm -f *.zip
+          # Ekstrak semua file ZIP
+          unzip -o '*.zip' -d temp
 
-      - name: Commit extracted files
-        run: |
+          # Pindahkan isi ke root
+          mv temp/*/* . 2>/dev/null || mv temp/* .
+
+          # Hapus ZIP dan folder temp
+          rm -rf temp *.zip
+
+          # Commit & push hasil ekstrak
           git config user.name github-actions
-          git config user.email actions@github.com
+          git config user.email github-actions@github.com
           git add .
-          git commit -m "Auto extract zip to root" || echo "No changes"
+          git commit -m "Auto unzip" || echo "No changes"
           git push
