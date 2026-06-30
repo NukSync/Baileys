@@ -1,29 +1,46 @@
-name: Auto Extract ZIP
+name: Extract ZIP to Root
 
-on: [push]
+on:
+  push:
+    paths:
+      - "*.zip"
+
+permissions:
+  contents: write
 
 jobs:
-  unzip:
+  extract:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - name: Extract ZIP to root
+      - name: Extract ZIP
         run: |
-          for file in *.zip; do
-            unzip -o "$file"
-          done
+          shopt -s dotglob nullglob
 
-      - name: Remove ZIP
-        run: rm -f *.zip
+          ZIP=$(ls *.zip | head -n 1)
+          unzip -oq "$ZIP" -d extracted
 
-      - name: Commit extracted files
+          DIR=$(find extracted -mindepth 1 -maxdepth 1 -type d | head -n 1)
+
+          if [ -n "$DIR" ]; then
+            mv "$DIR"/* .
+          else
+            mv extracted/* .
+          fi
+
+          rm -rf extracted
+          rm -f *.zip
+
+      - name: Commit
         run: |
-          git config user.name github-actions
-          git config user.email actions@github.com
-          git add .
-          git commit -m "Auto extract zip to root" || echo "No changes"
-          git push
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add -A
+
+          if ! git diff --cached --quiet; then
+            git commit -m "Auto extract ZIP"
+            git push
+          fi
